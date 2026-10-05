@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  }
+}
+
+@media print {
+  /* Hide interactive controls, header action buttons, sticky bars, and modals from print */
+  header,
+  nav,
+  input,
+  select,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  section {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 2rem !important;
+    padding: 1.5rem !important;
+  }
+
+  /* Ensure charts and tables print with clear borders */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Force color printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

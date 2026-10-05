@@ -1,0 +1,6 @@
+{
+  "name": "Meta Muse & Agentic AI Intelligence Dashboard",
+  "description": "메타 뮤즈(Meta Muse) 심층 분석, 글리머 30B 온디바이스 벤치마크, 5계층 프롬프트 인젝션 방어 시뮬레이터 및 빅테크 에이전트 생태계 분석 대시보드",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
