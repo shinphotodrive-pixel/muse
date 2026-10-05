@@ -3,6 +3,7 @@ import {
   X, 
   FileJson, 
   FileText, 
+  FileSpreadsheet,
   Copy, 
   Check, 
   Download, 
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { 
   downloadReportAsJson, 
+  downloadReportAsCsv,
   triggerPrintReport, 
   copySummaryToClipboard,
   generateReportData,
@@ -65,6 +67,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     });
   };
 
+  const handleCsvDownload = () => {
+    const fileName = downloadReportAsCsv();
+    setRecentExports(getRecentExports());
+    showToast({
+      type: 'success',
+      title: 'CSV 스프레드시트 다운로드 완료',
+      description: `${fileName} 파일이 저장되었습니다. Excel 및 Google Sheets에서 바로 열 수 있습니다.`
+    });
+  };
+
   const handlePdfPrint = () => {
     onClose();
     setTimeout(() => {
@@ -105,6 +117,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
       showToast({
         type: 'success',
         title: '보고서 재다운로드 완료',
+        description: `${item.fileName} 파일이 다시 저장되었습니다.`
+      });
+    } else if (item.format === 'CSV') {
+      downloadReportAsCsv();
+      showToast({
+        type: 'success',
+        title: 'CSV 재다운로드 완료',
         description: `${item.fileName} 파일이 다시 저장되었습니다.`
       });
     } else if (item.format === 'PDF') {
@@ -224,62 +243,97 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               및 클라우드 대비 비용 절감 데이터를 원하는 포맷으로 내보냅니다.
             </p>
 
-            {/* Export Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Export Cards: JSON, CSV, PDF */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               
               {/* Option 1: JSON Export */}
               <div 
                 onClick={handleJsonDownload}
-                className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-500 cursor-pointer transition-all space-y-2 group shadow-2xs"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleJsonDownload(); }}
                 aria-label="JSON 데이터셋 다운로드"
               >
-                <div className="flex items-center justify-between">
-                  <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                    <FileJson className="w-4 h-4" />
-                  </span>
-                  <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                    .JSON
-                  </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                      <FileJson className="w-4 h-4" />
+                    </span>
+                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                      .JSON
+                    </span>
+                  </div>
+                  <div className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors text-xs sm:text-sm">
+                    JSON 데이터셋
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Python, AI 파이프라인 연동용 계층형 구조화 데이터 파일.
+                  </p>
                 </div>
-                <div className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors text-xs sm:text-sm">
-                  JSON 데이터셋 다운로드
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Python, Excel, Pandas에서 즉시 파싱할 수 있는 완전한 구조화 데이터 파일.
-                </p>
-                <div className="pt-1 text-[11px] font-semibold text-blue-600 flex items-center gap-1">
+                <div className="pt-2 text-[11px] font-semibold text-blue-600 flex items-center gap-1 border-t border-slate-200/60">
                   <span>파일 받기</span>
                   <Download className="w-3.5 h-3.5" />
                 </div>
               </div>
 
-              {/* Option 2: PDF Export */}
+              {/* Option 2: CSV Export */}
+              <div 
+                onClick={handleCsvDownload}
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50/60 hover:border-emerald-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCsvDownload(); }}
+                aria-label="CSV 스프레드시트 데이터 다운로드"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                      <FileSpreadsheet className="w-4 h-4" />
+                    </span>
+                    <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+                      .CSV
+                    </span>
+                  </div>
+                  <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm">
+                    CSV 스프레드시트
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Excel, Google Sheets, Pandas 호환 UTF-8 BOM 원시 데이터.
+                  </p>
+                </div>
+                <div className="pt-2 text-[11px] font-semibold text-emerald-600 flex items-center gap-1 border-t border-slate-200/60">
+                  <span>스프레드시트 받기</span>
+                  <Download className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Option 3: PDF Export */}
               <div 
                 onClick={handlePdfPrint}
-                className="p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-500 cursor-pointer transition-all space-y-2 group shadow-2xs"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') handlePdfPrint(); }}
                 aria-label="PDF 보고서 저장 및 인쇄"
               >
-                <div className="flex items-center justify-between">
-                  <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                    <FileText className="w-4 h-4" />
-                  </span>
-                  <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                    .PDF
-                  </span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                      <FileText className="w-4 h-4" />
+                    </span>
+                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                      .PDF
+                    </span>
+                  </div>
+                  <div className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors text-xs sm:text-sm">
+                    PDF 인쇄 및 문서
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    페이지별 헤더·타임스탬프가 포함된 A4 인쇄 및 보관용 문서.
+                  </p>
                 </div>
-                <div className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors text-xs sm:text-sm">
-                  PDF 인쇄 및 문서 저장
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  헤더와 인터랙티브 버튼이 배제된 인쇄 전용 레이아웃으로 A4 PDF 파일 저장.
-                </p>
-                <div className="pt-1 text-[11px] font-semibold text-indigo-600 flex items-center gap-1">
+                <div className="pt-2 text-[11px] font-semibold text-indigo-600 flex items-center gap-1 border-t border-slate-200/60">
                   <span>인쇄창 열기</span>
                   <Printer className="w-3.5 h-3.5" />
                 </div>
@@ -365,9 +419,11 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
                           <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono ${
                             item.format === 'JSON'
                               ? 'bg-blue-100 text-blue-700'
+                              : item.format === 'CSV'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : item.format === 'PDF'
                               ? 'bg-indigo-100 text-indigo-700'
-                              : 'bg-emerald-100 text-emerald-700'
+                              : 'bg-amber-100 text-amber-800'
                           }`}>
                             {item.format}
                           </span>

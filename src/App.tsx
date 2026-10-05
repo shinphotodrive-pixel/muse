@@ -93,9 +93,65 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Report timestamp for printed reports
+  const [printTimestamp, setPrintTimestamp] = useState<string>(() => {
+    const now = new Date();
+    return now.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+  });
+
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      const now = new Date();
+      setPrintTimestamp(
+        now.toLocaleString('ko-KR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })
+      );
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => window.removeEventListener('beforeprint', handleBeforePrint);
+  }, []);
+
   return (
     <ToastProvider>
       <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-blue-600 selection:text-white">
+        {/* Custom Print-Only Header (Repeated on each printed page via CSS fixed position) */}
+        <div className="report-print-header" aria-hidden="true">
+          <div className="app-branding">
+            <span className="font-bold text-slate-900 tracking-tight">Meta Muse & Agentic AI Intelligence Dashboard</span>
+            <span className="text-slate-400 font-normal">| Glimmer 30B Evaluation Suite</span>
+          </div>
+          <div className="report-timestamp">
+            <span>보고서 출력일시: {printTimestamp}</span>
+            <span className="text-slate-300">|</span>
+            <span>Ver. 2026.09</span>
+          </div>
+        </div>
+
+        {/* Custom Print-Only Footer (Repeated on each printed page via CSS fixed position) */}
+        <div className="report-print-footer" aria-hidden="true">
+          <div className="footer-left">
+            <span>CONFIDENTIAL & PROPRIETARY — META AGENTIC PLATFORM EVALUATION & SECURITY AUDIT</span>
+          </div>
+          <div className="footer-right">
+            <span>Official Research Report • Confidential</span>
+          </div>
+        </div>
+
         {/* Top Header Contract */}
         <Header
           activeSection={activeSection}

@@ -10,11 +10,55 @@ import {
   Download,
   Info,
   TrendingUp,
+  TrendingDown,
   Award
 } from 'lucide-react';
 import { BENCHMARKS, HARDWARE_PRESETS } from '../data/reportData';
 import { downloadReportAsJson } from '../utils/exportReport';
 import { useToast } from '../context/ToastContext';
+
+interface TrendBadgeProps {
+  current: number;
+  previous: number;
+  compact?: boolean;
+  showPrev?: boolean;
+}
+
+const TrendBadge: React.FC<TrendBadgeProps> = ({ 
+  current, 
+  previous, 
+  compact = false,
+  showPrev = false
+}) => {
+  const delta = current - previous;
+  const pct = (delta / previous) * 100;
+  const isUp = delta >= 0;
+
+  return (
+    <span 
+      className={`inline-flex items-center gap-1 font-mono font-bold rounded-md px-1.5 py-0.5 transition-all select-none ${
+        isUp 
+          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs hover:bg-emerald-100/70' 
+          : 'bg-rose-50 text-rose-700 border border-rose-200/90 shadow-2xs hover:bg-rose-100/70'
+      } ${compact ? 'text-[10px]' : 'text-xs'}`}
+      title={`전주 벤치마크(${previous}점) 대비 ${isUp ? '+' : ''}${delta.toFixed(1)}점 (${isUp ? '+' : ''}${pct.toFixed(1)}%) 성장`}
+    >
+      {isUp ? (
+        <TrendingUp className={`${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-emerald-600 stroke-[2.5]`} />
+      ) : (
+        <TrendingDown className={`${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-rose-600 stroke-[2.5]`} />
+      )}
+      <span>{isUp ? '+' : ''}{pct.toFixed(1)}%</span>
+      {showPrev ? (
+        <span className="text-[9px] text-slate-400 font-normal">
+          (전주 {previous})
+        </span>
+      ) : !compact ? (
+        <span className="text-[9px] text-emerald-800/80 font-semibold">WoW</span>
+      ) : null}
+    </span>
+  );
+};
 
 export const BenchmarkSection: React.FC = () => {
   const { showToast } = useToast();
@@ -151,7 +195,7 @@ export const BenchmarkSection: React.FC = () => {
         {/* Chart Viewport (7 Cols) */}
         <div className="lg:col-span-7 bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-between relative">
           
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 text-xs">
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200 text-xs">
             <span className="font-semibold text-slate-700">30B급 오픈웨이트 모델 3종 벤치마크 비교</span>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -169,7 +213,25 @@ export const BenchmarkSection: React.FC = () => {
             </div>
           </div>
 
-          {/* BAR VIEW WITH INFORMATIVE TOOLTIPS */}
+          {/* Performance Growth WoW Banner */}
+          <div className="mb-3.5 p-2.5 rounded-lg bg-emerald-50/90 border border-emerald-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded bg-emerald-100 text-emerald-700">
+                <TrendingUp className="w-3.5 h-3.5 stroke-[2.5]" />
+              </span>
+              <div>
+                <span className="font-bold text-emerald-950">Glimmer 30B 주간 성능 추이:</span>
+                <span className="text-emerald-800 ml-1 text-[11px]">전주 대비 5대 핵심 벤치마크 전 항목 지속 상승</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-800 bg-white/90 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs">
+              <TrendingUp className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+              <span>평균 +4.2% WoW 성장</span>
+              <span className="text-[10px] text-emerald-600 font-normal">(코딩 +6.9% ▲, 도구활용 +5.2% ▲)</span>
+            </div>
+          </div>
+
+          {/* BAR VIEW WITH INFORMATIVE TOOLTIPS & TREND INDICATORS */}
           {viewType === 'bar' && (
             <div className="space-y-3.5 py-1" role="region" aria-label="벤치마크 막대 그래프">
               {BENCHMARKS.map((b) => {
@@ -177,6 +239,8 @@ export const BenchmarkSection: React.FC = () => {
                 const max = 100;
                 const deltaGemma = b.glimmer30B - b.gemma4_31B;
                 const deltaQwen = b.glimmer30B - b.qwen36_27B;
+                const wowDelta = b.glimmer30B - b.prevWeekGlimmer30B;
+                const wowPct = ((wowDelta / b.prevWeekGlimmer30B) * 100).toFixed(1);
 
                 return (
                   <div
@@ -189,7 +253,7 @@ export const BenchmarkSection: React.FC = () => {
                     tabIndex={0}
                     onFocus={() => setHoveredMetric(b.metric)}
                     onBlur={() => setHoveredMetric(null)}
-                    aria-label={`${b.metric}: 글리머 30B ${b.glimmer30B}점, 젬마4 ${b.gemma4_31B}점, 큐웬3.6 ${b.qwen36_27B}점`}
+                    aria-label={`${b.metric}: 글리머 30B ${b.glimmer30B}점, 전주 대비 +${wowPct}%, 젬마4 ${b.gemma4_31B}점, 큐웬3.6 ${b.qwen36_27B}점`}
                   >
                     <div className="flex items-center justify-between text-xs mb-1.5">
                       <div className="flex items-center gap-1.5">
@@ -199,6 +263,8 @@ export const BenchmarkSection: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
+                        {/* Visual Trend Indicator (Up/Down Arrow with Percentage) */}
+                        <TrendBadge current={b.glimmer30B} previous={b.prevWeekGlimmer30B} />
                         <span className="font-mono text-xs text-blue-700 font-black tabular-nums">
                           글리머 {b.glimmer30B.toFixed(1)}점
                         </span>
@@ -209,7 +275,7 @@ export const BenchmarkSection: React.FC = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                      {/* Glimmer 30B Bar */}
+                      {/* Glimmer 30B Bar with Inlined Trend Badge */}
                       <div className="flex items-center gap-2 text-[10px]">
                         <span className="w-16 font-semibold text-slate-700 truncate">글리머 30B</span>
                         <div className="flex-1 bg-slate-200 h-3 rounded-xs overflow-hidden relative">
@@ -218,9 +284,15 @@ export const BenchmarkSection: React.FC = () => {
                             style={{ width: `${(b.glimmer30B / max) * 100}%` }}
                           />
                         </div>
-                        <span className="w-10 text-right font-mono text-blue-700 font-extrabold tabular-nums">
-                          {b.glimmer30B}
-                        </span>
+                        <div className="w-24 text-right flex items-center justify-end gap-1">
+                          <span className="font-mono text-blue-700 font-extrabold tabular-nums">
+                            {b.glimmer30B}
+                          </span>
+                          <span className="inline-flex items-center text-[9px] font-mono font-bold text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/60" title={`전주 ${b.prevWeekGlimmer30B}점 대비 주간 성장`}>
+                            <TrendingUp className="w-2.5 h-2.5 stroke-[2.5]" />
+                            +{wowPct}%
+                          </span>
+                        </div>
                       </div>
 
                       {/* Gemma 4 31B Bar */}
@@ -232,7 +304,7 @@ export const BenchmarkSection: React.FC = () => {
                             style={{ width: `${(b.gemma4_31B / max) * 100}%` }}
                           />
                         </div>
-                        <span className="w-10 text-right font-mono text-slate-500 tabular-nums">
+                        <span className="w-24 text-right font-mono text-slate-500 tabular-nums">
                           {b.gemma4_31B}
                         </span>
                       </div>
@@ -246,7 +318,7 @@ export const BenchmarkSection: React.FC = () => {
                             style={{ width: `${(b.qwen36_27B / max) * 100}%` }}
                           />
                         </div>
-                        <span className="w-10 text-right font-mono text-slate-500 tabular-nums">
+                        <span className="w-24 text-right font-mono text-slate-500 tabular-nums">
                           {b.qwen36_27B}
                         </span>
                       </div>
@@ -255,7 +327,7 @@ export const BenchmarkSection: React.FC = () => {
                     {/* Rich Interactive Tooltip Overlay when hovered */}
                     {isHovered && (
                       <div 
-                        className="mt-2.5 p-3 rounded-lg bg-slate-900 text-slate-200 text-xs shadow-xl border border-slate-700 animate-in fade-in duration-150 space-y-1.5"
+                        className="mt-2.5 p-3 rounded-lg bg-slate-900 text-slate-200 text-xs shadow-xl border border-slate-700 animate-in fade-in duration-150 space-y-2"
                         role="tooltip"
                       >
                         <div className="flex items-center justify-between text-[11px] text-blue-400 font-semibold border-b border-slate-800 pb-1">
@@ -265,10 +337,22 @@ export const BenchmarkSection: React.FC = () => {
                           </span>
                           <span className="text-emerald-400 font-bold">1위: 글리머 30B ({b.glimmer30B}점)</span>
                         </div>
+
+                        {/* Weekly Growth Trend Box in Tooltip */}
+                        <div className="p-2 rounded-lg bg-emerald-950/70 border border-emerald-700/80 flex items-center justify-between text-[11px]">
+                          <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                            <TrendingUp className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
+                            <span>전주 벤치마크 대비 성능 성장 (WoW):</span>
+                          </div>
+                          <div className="font-mono text-emerald-300 font-bold">
+                            전주 {b.prevWeekGlimmer30B}점 → 현재 {b.glimmer30B}점 <span className="text-emerald-400 font-black">(▲ +{wowDelta.toFixed(1)}점, +{wowPct}% 성장)</span>
+                          </div>
+                        </div>
+
                         <p className="text-[11px] text-slate-300 leading-relaxed">
                           {b.description}
                         </p>
-                        <div className="grid grid-cols-2 gap-2 pt-1 text-[10px] font-mono">
+                        <div className="grid grid-cols-2 gap-2 pt-0.5 text-[10px] font-mono">
                           <div className="p-1 rounded bg-slate-800/80 text-slate-300">
                             vs 젬마4 31B: <span className="text-emerald-400 font-bold">+{deltaGemma.toFixed(1)}점</span> ({((deltaGemma / b.gemma4_31B) * 100).toFixed(1)}% 우위)
                           </div>
@@ -385,14 +469,26 @@ export const BenchmarkSection: React.FC = () => {
               {/* Floating Radar Tooltip */}
               {activeBenchmark ? (
                 <div 
-                  className="w-full max-w-sm mt-3 p-3 rounded-xl bg-slate-900 text-slate-200 text-xs shadow-lg border border-slate-700 space-y-1"
+                  className="w-full max-w-sm mt-3 p-3 rounded-xl bg-slate-900 text-slate-200 text-xs shadow-lg border border-slate-700 space-y-2"
                   role="tooltip"
                 >
                   <div className="flex items-center justify-between border-b border-slate-800 pb-1">
                     <span className="font-bold text-blue-400">{activeBenchmark.metric}</span>
                     <span className="text-[10px] text-slate-400 font-mono">카테고리: {activeBenchmark.category}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px] text-center">
+
+                  {/* Trend Indicator in Radar Tooltip */}
+                  <div className="p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-700/80 text-[10px] flex items-center justify-between">
+                    <span className="text-emerald-300 flex items-center gap-1 font-semibold">
+                      <TrendingUp className="w-3 h-3 text-emerald-400 stroke-[2.5]" />
+                      전주 대비 주간 성장 추이(WoW):
+                    </span>
+                    <span className="font-mono text-emerald-300 font-bold">
+                      {activeBenchmark.prevWeekGlimmer30B}점 → {activeBenchmark.glimmer30B}점 <span className="text-emerald-400 font-black">(▲ +{(((activeBenchmark.glimmer30B - activeBenchmark.prevWeekGlimmer30B) / activeBenchmark.prevWeekGlimmer30B) * 100).toFixed(1)}%)</span>
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-0.5 font-mono text-[11px] text-center">
                     <div className="p-1 rounded bg-blue-900/40 text-blue-300 border border-blue-700">
                       글리머: <span className="font-bold">{activeBenchmark.glimmer30B}</span>
                     </div>
@@ -409,7 +505,7 @@ export const BenchmarkSection: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-[11px] text-slate-500 text-center mt-2">
-                  레이더 차트의 파란색 노드나 축 레이블 위에 마우스를 올리면 정확한 지표 비교값이 표시됩니다.
+                  레이더 차트의 파란색 노드나 축 레이블 위에 마우스를 올리면 정확한 지표 비교값 및 주간 성장률이 표시됩니다.
                 </p>
               )}
             </div>
@@ -419,11 +515,12 @@ export const BenchmarkSection: React.FC = () => {
           {viewType === 'table' && (
             <div className="overflow-x-auto py-2">
               <table className="w-full text-left text-xs border-collapse" aria-label="30B급 오픈웨이트 모델 벤치마크 점수표">
-                <caption className="sr-only">글리머 30B, 젬마 4 31B, 큐웬 3.6 27B 모델 간 5개 벤치마크 항목별 점수 및 격차 비교</caption>
+                <caption className="sr-only">글리머 30B, 젬마 4 31B, 큐웬 3.6 27B 모델 간 5개 벤치마크 항목별 점수 및 전주 대비 성장률 비교</caption>
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-700 font-semibold bg-slate-100/60">
                     <th scope="col" className="p-2">벤치마크 항목</th>
-                    <th scope="col" className="p-2 text-right text-blue-700 font-bold">글리머 30B</th>
+                    <th scope="col" className="p-2 text-right text-blue-700 font-bold">글리머 30B (현재)</th>
+                    <th scope="col" className="p-2 text-right text-emerald-700 font-bold">전주 대비 추이 (WoW)</th>
                     <th scope="col" className="p-2 text-right">젬마4 31B</th>
                     <th scope="col" className="p-2 text-right">큐웬3.6 27B</th>
                     <th scope="col" className="p-2 text-right">격차 vs 젬마</th>
@@ -436,16 +533,19 @@ export const BenchmarkSection: React.FC = () => {
                       <tr key={b.metric} className="hover:bg-blue-50/30">
                         <th scope="row" className="p-2 font-medium text-slate-800">{b.metric}</th>
                         <td className="p-2 text-right font-mono font-bold text-blue-700 tabular-nums">
-                          {b.glimmer30B.toFixed(1)}
+                          {b.glimmer30B.toFixed(1)}점
+                        </td>
+                        <td className="p-2 text-right font-mono tabular-nums">
+                          <TrendBadge current={b.glimmer30B} previous={b.prevWeekGlimmer30B} showPrev={true} />
                         </td>
                         <td className="p-2 text-right font-mono text-slate-600 tabular-nums">
-                          {b.gemma4_31B.toFixed(1)}
+                          {b.gemma4_31B.toFixed(1)}점
                         </td>
                         <td className="p-2 text-right font-mono text-slate-600 tabular-nums">
-                          {b.qwen36_27B.toFixed(1)}
+                          {b.qwen36_27B.toFixed(1)}점
                         </td>
                         <td className="p-2 text-right font-mono text-emerald-600 font-semibold tabular-nums">
-                          +{delta.toFixed(1)}
+                          +{delta.toFixed(1)}점
                         </td>
                       </tr>
                     );

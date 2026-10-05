@@ -2,6 +2,7 @@ export interface BenchmarkScore {
   metric: string;
   category: string;
   glimmer30B: number;
+  prevWeekGlimmer30B: number;
   gemma4_31B: number;
   qwen36_27B: number;
   description: string;

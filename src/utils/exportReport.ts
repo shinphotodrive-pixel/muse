@@ -54,7 +54,7 @@ export interface FullReportPayload {
 export interface RecentExportRecord {
   id: string;
   fileName: string;
-  format: 'JSON' | 'PDF' | 'MARKDOWN';
+  format: 'JSON' | 'PDF' | 'MARKDOWN' | 'CSV';
   timestamp: string;
   fileSizeBytes: number;
   title: string;
@@ -174,6 +174,220 @@ export function downloadReportAsJson(): string {
     timestamp: new Date().toISOString(),
     fileSizeBytes: blob.size,
     title: '메타 뮤즈 2026 종합 기술 보고서 (.json)',
+  });
+
+  return fileName;
+}
+
+function escapeCsvCell(val: unknown): string {
+  if (val === null || val === undefined) return '""';
+  const str = String(val);
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+export function downloadReportAsCsv(): string {
+  const data = generateReportData();
+  const rows: string[] = [];
+
+  // Metadata block
+  rows.push(`${escapeCsvCell('보고서 제목')},${escapeCsvCell(data.reportTitle)}`);
+  rows.push(`${escapeCsvCell('버전')},${escapeCsvCell(data.version)}`);
+  rows.push(`${escapeCsvCell('생성 일시')},${escapeCsvCell(new Date(data.generatedAt).toLocaleString('ko-KR'))}`);
+  rows.push(`${escapeCsvCell('데이터 출처')},${escapeCsvCell(data.source)}`);
+  rows.push('');
+
+  // 1. Executive Summary KPIs
+  rows.push(escapeCsvCell('=== 1. 핵심 성과 지표 (Executive Summary KPIs) ==='));
+  rows.push(`${escapeCsvCell('지표명')},${escapeCsvCell('측정값')}`);
+  rows.push(`${escapeCsvCell('누적 다운로드 수')},${escapeCsvCell(data.executiveSummary.kpis.totalDownloads)}`);
+  rows.push(`${escapeCsvCell('탑재 온디바이스 모델')},${escapeCsvCell(data.executiveSummary.kpis.localModel)}`);
+  rows.push(`${escapeCsvCell('최고 생성 속도')},${escapeCsvCell(data.executiveSummary.kpis.peakInferenceSpeed)}`);
+  rows.push(`${escapeCsvCell('주간 무료 토큰 제공량')},${escapeCsvCell(data.executiveSummary.kpis.weeklyFreeTokens)}`);
+  rows.push('');
+
+  // 2. Glimmer 30B Benchmarks
+  rows.push(escapeCsvCell('=== 2. Glimmer 30B 벤치마크 평가 결과 (Benchmarks) ==='));
+  rows.push([
+    escapeCsvCell('평가 지표 (Metric)'),
+    escapeCsvCell('카테고리 (Category)'),
+    escapeCsvCell('Glimmer 30B (현재)'),
+    escapeCsvCell('Glimmer 30B (전주 대비 성장)'),
+    escapeCsvCell('Gemma 4 31B'),
+    escapeCsvCell('Qwen 3.6 27B'),
+    escapeCsvCell('최고 우수 모델 (Winner)'),
+    escapeCsvCell('상세 분석 요약 (Description)')
+  ].join(','));
+
+  data.benchmarks.forEach((b) => {
+    const winner = b.glimmer30B >= b.gemma4_31B && b.glimmer30B >= b.qwen36_27B ? 'Glimmer 30B' : 'Baseline';
+    const wowDelta = b.glimmer30B - b.prevWeekGlimmer30B;
+    const wowPct = ((wowDelta / b.prevWeekGlimmer30B) * 100).toFixed(1);
+    rows.push([
+      escapeCsvCell(b.metric),
+      escapeCsvCell(b.category),
+      escapeCsvCell(`${b.glimmer30B} ${b.unit}`),
+      escapeCsvCell(`+${wowDelta.toFixed(1)}점 (+${wowPct}%)`),
+      escapeCsvCell(`${b.gemma4_31B} ${b.unit}`),
+      escapeCsvCell(`${b.qwen36_27B} ${b.unit}`),
+      escapeCsvCell(winner),
+      escapeCsvCell(b.description)
+    ].join(','));
+  });
+  rows.push('');
+
+  // 3. Hardware Presets & Performance
+  rows.push(escapeCsvCell('=== 3. 온디바이스 하드웨어 사양별 추론 속도 및 VRAM (Hardware Presets) ==='));
+  rows.push([
+    escapeCsvCell('하드웨어 모델명'),
+    escapeCsvCell('연산 성능 (Compute)'),
+    escapeCsvCell('VRAM 용량'),
+    escapeCsvCell('DFlash 추측 디코딩 지원'),
+    escapeCsvCell('기본 생성 속도 (Base tok/s)'),
+    escapeCsvCell('DFlash 부스트 속도 (Boost tok/s)'),
+    escapeCsvCell('하드웨어 특성 및 권장 용도')
+  ].join(','));
+
+  data.hardwarePresets.forEach((h) => {
+    rows.push([
+      escapeCsvCell(h.name),
+      escapeCsvCell(`${h.computeTflops} TFLOPS`),
+      escapeCsvCell(`${h.vramGb} GB`),
+      escapeCsvCell(h.dflashSupported ? 'DFlash 가속 지원' : '표준 실행'),
+      escapeCsvCell(`${h.baseToksPerSec} tok/s`),
+      escapeCsvCell(`${h.dflashToksPerSec} tok/s`),
+      escapeCsvCell(h.description)
+    ].join(','));
+  });
+  rows.push('');
+
+  // 4. 5-Layer Prompt Injection Security Architecture
+  rows.push(escapeCsvCell('=== 4. 5계층 프롬프트 인젝션 방어 체계 (Security Defense Layers) ==='));
+  rows.push([
+    escapeCsvCell('방어 계층 (Layer)'),
+    escapeCsvCell('계층 명칭 (Name)'),
+    escapeCsvCell('단축명 (Short Name)'),
+    escapeCsvCell('주요 방어 영역 (Headline)'),
+    escapeCsvCell('핵심 방어 메커니즘 (Mechanism)'),
+    escapeCsvCell('차단하는 침해 유형 (Failure Mode Prevented)')
+  ].join(','));
+
+  data.securityArchitecture.layers.forEach((l) => {
+    rows.push([
+      escapeCsvCell(`Layer ${l.layer}`),
+      escapeCsvCell(l.name),
+      escapeCsvCell(l.shortName),
+      escapeCsvCell(l.headline),
+      escapeCsvCell(l.mechanism),
+      escapeCsvCell(l.failureModePrevented)
+    ].join(','));
+  });
+  rows.push('');
+
+  // 5. Simulated Attack Scenarios
+  rows.push(escapeCsvCell('=== 5. 실증 공격 시뮬레이션 결과 (Simulated Attack Scenarios) ==='));
+  rows.push([
+    escapeCsvCell('시나리오 ID'),
+    escapeCsvCell('공격 벡터 (Category)'),
+    escapeCsvCell('위험도 (Severity)'),
+    escapeCsvCell('시나리오 제목 (Title)'),
+    escapeCsvCell('공격 페이로드 (Attack Payload)'),
+    escapeCsvCell('공격 침투 경로 (Attack Vector)'),
+    escapeCsvCell('공격 목표 (Target Objective)'),
+    escapeCsvCell('최종 방어 결과 (Final Outcome)')
+  ].join(','));
+
+  data.securityArchitecture.simulatedAttackScenarios.forEach((s) => {
+    rows.push([
+      escapeCsvCell(s.id),
+      escapeCsvCell(s.category),
+      escapeCsvCell(s.severity),
+      escapeCsvCell(s.title),
+      escapeCsvCell(s.attackPayload),
+      escapeCsvCell(s.attackVector),
+      escapeCsvCell(s.targetObjective),
+      escapeCsvCell(s.finalOutcome)
+    ].join(','));
+  });
+  rows.push('');
+
+  // 6. Model Comparative Defense (Glimmer 30B vs Baseline Models)
+  rows.push(escapeCsvCell('=== 6. 모델 간 차등 보안 방어 비교표 (Model Comparative Defense) ==='));
+  rows.push([
+    escapeCsvCell('기준 모델 (Baseline Model)'),
+    escapeCsvCell('공격 시나리오'),
+    escapeCsvCell('Glimmer 30B 방어 상태'),
+    escapeCsvCell('Glimmer 차단 계층'),
+    escapeCsvCell('Glimmer 손실액'),
+    escapeCsvCell('기준 모델 침해 상태'),
+    escapeCsvCell('기준 모델 침해 지점'),
+    escapeCsvCell('기준 모델 손실액'),
+    escapeCsvCell('차등 방어 혜택 (Differential Benefit)'),
+    escapeCsvCell('방어 저항력 격차 (Delta %)')
+  ].join(','));
+
+  BASELINE_MODELS.forEach((baseline) => {
+    const comparisons = MODEL_DEFENSE_COMPARISONS[baseline.id] || [];
+    comparisons.forEach((c) => {
+      rows.push([
+        escapeCsvCell(baseline.name),
+        escapeCsvCell(c.scenarioTitle),
+        escapeCsvCell(c.glimmer30B.status),
+        escapeCsvCell(c.glimmer30B.stoppedAtLayer),
+        escapeCsvCell(c.glimmer30B.financialLoss),
+        escapeCsvCell(c.baselineModel.status),
+        escapeCsvCell(c.baselineModel.breachPoint),
+        escapeCsvCell(c.baselineModel.financialLoss),
+        escapeCsvCell(c.differentialBenefit),
+        escapeCsvCell(`+${c.resilienceDeltaPercent}%`)
+      ].join(','));
+    });
+  });
+  rows.push('');
+
+  // 7. Pricing & Token Limits
+  rows.push(escapeCsvCell('=== 7. 요금제 및 토큰 한도 (Pricing & Token Plans) ==='));
+  rows.push([
+    escapeCsvCell('플랜명'),
+    escapeCsvCell('월간 요금'),
+    escapeCsvCell('주간 토큰 할당량'),
+    escapeCsvCell('가상머신 보안 격리 수준'),
+    escapeCsvCell('주요 타겟 대상'),
+    escapeCsvCell('주요 기능 명세')
+  ].join(','));
+
+  data.pricingModel.forEach((p) => {
+    rows.push([
+      escapeCsvCell(p.name),
+      escapeCsvCell(`$${p.monthlyPriceUsd}/월`),
+      escapeCsvCell(p.tokenAllocation),
+      escapeCsvCell(p.vmLevel),
+      escapeCsvCell(p.target),
+      escapeCsvCell(p.features.join(' | '))
+    ].join(','));
+  });
+
+  // Prepend UTF-8 BOM for Microsoft Excel / Google Sheets compatibility
+  const csvContent = '\uFEFF' + rows.join('\r\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `meta-muse-intelligence-data-${dateStr}.csv`;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  saveRecentExport({
+    id: `exp-csv-${Date.now()}`,
+    fileName,
+    format: 'CSV',
+    timestamp: new Date().toISOString(),
+    fileSizeBytes: blob.size,
+    title: '메타 뮤즈 원시 스프레드시트 데이터셋 (.csv)',
   });
 
   return fileName;
