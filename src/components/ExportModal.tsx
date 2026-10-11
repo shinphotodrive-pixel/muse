@@ -41,22 +41,6 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const reportPreview = generateReportData();
-
   const handleJsonDownload = () => {
     const fileName = downloadReportAsJson();
     setRecentExports(getRecentExports());
@@ -88,6 +72,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
       });
     }, 200);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.altKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'j') {
+          e.preventDefault();
+          handleJsonDownload();
+        } else if (key === 'p') {
+          e.preventDefault();
+          handlePdfPrint();
+        } else if (key === 'c') {
+          e.preventDefault();
+          handleCsvDownload();
+        }
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const reportPreview = generateReportData();
 
   const handleCopyClipboard = async () => {
     try {
@@ -200,32 +214,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
       aria-describedby="export-modal-desc"
     >
       <div 
-        className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]"
+        className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-4xl w-full mx-2 sm:mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[94vh] sm:max-h-[90vh]"
       >
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold shadow-2xs">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold shadow-2xs shrink-0">
               <Download className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 id="export-modal-title" className="font-bold text-slate-900 text-base">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 id="export-modal-title" className="font-bold text-slate-900 text-sm sm:text-base truncate">
                   보고서 오프라인 내보내기 & 최근 내역
                 </h2>
                 <kbd className="hidden sm:inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 text-slate-600 border border-slate-300">
                   단축키: ⌘E / Ctrl+E
                 </kbd>
+                <span className="text-[10px] text-slate-500 font-mono hidden md:inline">
+                  (Alt+J / Alt+C / Alt+P)
+                </span>
               </div>
-              <p id="export-modal-desc" className="text-xs text-slate-500">
+              <p id="export-modal-desc" className="text-[11px] sm:text-xs text-slate-500 truncate sm:whitespace-normal">
                 2026 에이전틱 AI 벤치마크, 5계층 보안 시뮬레이션 및 비용 절감 데이터
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors"
+            className="p-2 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 active:bg-slate-300 transition-colors shrink-0 touch-manipulation min-w-[36px] min-h-[36px] flex items-center justify-center"
             aria-label="닫기"
           >
             <X className="w-5 h-5" />
@@ -236,7 +253,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-200">
           
           {/* Left Column: Export Formats & Controls (7 Cols) */}
-          <div className="lg:col-span-7 p-6 space-y-5">
+          <div className="lg:col-span-7 p-4 sm:p-6 space-y-4 sm:space-y-5">
             
             <p className="text-xs text-slate-600 leading-relaxed">
               Glimmer 30B 벤치마크 결과, 5대 하드웨어 성능 계산식, 프롬프트 인젝션 4대 공격 시뮬레이션 결과 
@@ -244,25 +261,30 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
             </p>
 
             {/* Export Cards: JSON, CSV, PDF */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               
               {/* Option 1: JSON Export */}
               <div 
                 onClick={handleJsonDownload}
-                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50/60 hover:border-blue-500 active:bg-blue-100/50 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between touch-manipulation min-h-[120px]"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleJsonDownload(); }}
-                aria-label="JSON 데이터셋 다운로드"
+                aria-label="JSON 데이터셋 다운로드 (단축키: Alt+J)"
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
                       <FileJson className="w-4 h-4" />
                     </span>
-                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                      .JSON
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
+                        .JSON
+                      </span>
+                      <kbd className="font-mono text-[9px] bg-slate-100 text-slate-600 px-1 py-0.5 rounded border border-slate-300" title="단축키">
+                        Alt+J
+                      </kbd>
+                    </div>
                   </div>
                   <div className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors text-xs sm:text-sm">
                     JSON 데이터셋
@@ -280,20 +302,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               {/* Option 2: CSV Export */}
               <div 
                 onClick={handleCsvDownload}
-                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50/60 hover:border-emerald-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50/60 hover:border-emerald-500 active:bg-emerald-100/50 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between touch-manipulation min-h-[120px]"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleCsvDownload(); }}
-                aria-label="CSV 스프레드시트 데이터 다운로드"
+                aria-label="CSV 스프레드시트 데이터 다운로드 (단축키: Alt+C)"
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                       <FileSpreadsheet className="w-4 h-4" />
                     </span>
-                    <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
-                      .CSV
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">
+                        .CSV
+                      </span>
+                      <kbd className="font-mono text-[9px] bg-emerald-50 text-emerald-700 px-1 py-0.5 rounded border border-emerald-300" title="단축키">
+                        Alt+C
+                      </kbd>
+                    </div>
                   </div>
                   <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm">
                     CSV 스프레드시트
@@ -311,20 +338,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
               {/* Option 3: PDF Export */}
               <div 
                 onClick={handlePdfPrint}
-                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-500 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50/60 hover:border-indigo-500 active:bg-indigo-100/50 cursor-pointer transition-all space-y-2 group shadow-2xs flex flex-col justify-between touch-manipulation min-h-[120px]"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter') handlePdfPrint(); }}
-                aria-label="PDF 보고서 저장 및 인쇄"
+                aria-label="PDF 보고서 저장 및 인쇄 (단축키: Alt+P)"
               >
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
                       <FileText className="w-4 h-4" />
                     </span>
-                    <span className="font-mono text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-semibold">
-                      .PDF
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">
+                        .PDF
+                      </span>
+                      <kbd className="font-mono text-[9px] bg-indigo-50 text-indigo-700 px-1 py-0.5 rounded border border-indigo-300" title="단축키">
+                        Alt+P
+                      </kbd>
+                    </div>
                   </div>
                   <div className="font-bold text-slate-900 group-hover:text-indigo-700 transition-colors text-xs sm:text-sm">
                     PDF 인쇄 및 문서
