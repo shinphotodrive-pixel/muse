@@ -10,7 +10,8 @@ import {
   ECOSYSTEM_COMPARISON, 
   DOMESTIC_PLATFORM_IMPACT,
   BASELINE_MODELS,
-  MODEL_DEFENSE_COMPARISONS
+  MODEL_DEFENSE_COMPARISONS,
+  GLIMMER_VERSION_TRENDS
 } from '../data/reportData';
 import { ModelDefenseComparison } from '../types';
 
@@ -29,6 +30,7 @@ export interface FullReportPayload {
     description: string;
   };
   benchmarks: typeof BENCHMARKS;
+  versionTrends: typeof GLIMMER_VERSION_TRENDS;
   hardwarePresets: typeof HARDWARE_PRESETS;
   capabilities: typeof CAPABILITIES;
   securityArchitecture: {
@@ -128,6 +130,7 @@ export function generateReportData(): FullReportPayload {
       description: '2026년 9월 8일 공개된 메타의 뮤즈(Meta Muse) 심층 분석 보고서. 단순 텍스트 챗봇을 넘어 웹 브라우징, 쇼핑 결제, 비즈니스 콜링을 자율 수행하는 행동 중심 AI 에이전트 분석.'
     },
     benchmarks: BENCHMARKS,
+    versionTrends: GLIMMER_VERSION_TRENDS,
     hardwarePresets: HARDWARE_PRESETS,
     capabilities: CAPABILITIES,
     securityArchitecture: {
@@ -206,11 +209,15 @@ export function downloadReportAsCsv(): string {
   rows.push('');
 
   // 2. Glimmer 30B Benchmarks
-  rows.push(escapeCsvCell('=== 2. Glimmer 30B 벤치마크 평가 결과 (Benchmarks) ==='));
+  rows.push(escapeCsvCell('=== 2. Glimmer 30B 벤치마크 평가 결과 및 온디바이스 신뢰구간 (Benchmarks & 95% CI) ==='));
   rows.push([
     escapeCsvCell('평가 지표 (Metric)'),
     escapeCsvCell('카테고리 (Category)'),
     escapeCsvCell('Glimmer 30B (현재)'),
+    escapeCsvCell('오차범위 (MoE)'),
+    escapeCsvCell('95% 신뢰구간 (CI)'),
+    escapeCsvCell('표본 크기 (Sample Size)'),
+    escapeCsvCell('평가 하드웨어 환경'),
     escapeCsvCell('Glimmer 30B (전주 대비 성장)'),
     escapeCsvCell('Gemma 4 31B'),
     escapeCsvCell('Qwen 3.6 27B'),
@@ -226,11 +233,50 @@ export function downloadReportAsCsv(): string {
       escapeCsvCell(b.metric),
       escapeCsvCell(b.category),
       escapeCsvCell(`${b.glimmer30B} ${b.unit}`),
+      escapeCsvCell(`±${b.marginOfError.toFixed(1)}점`),
+      escapeCsvCell(`[${b.confidenceInterval[0].toFixed(1)} ~ ${b.confidenceInterval[1].toFixed(1)}]`),
+      escapeCsvCell(`n=${b.sampleSize}회`),
+      escapeCsvCell(b.evalHardware),
       escapeCsvCell(`+${wowDelta.toFixed(1)}점 (+${wowPct}%)`),
       escapeCsvCell(`${b.gemma4_31B} ${b.unit}`),
       escapeCsvCell(`${b.qwen36_27B} ${b.unit}`),
       escapeCsvCell(winner),
       escapeCsvCell(b.description)
+    ].join(','));
+  });
+  rows.push('');
+
+  // 2-B. Glimmer 30B Version Evolution Trends
+  rows.push(escapeCsvCell('=== 2-B. Glimmer 30B 모델 버전별 성능 진화 추이 (Model Version Evolution Trends) ==='));
+  rows.push([
+    escapeCsvCell('모델 버전 (Version)'),
+    escapeCsvCell('릴리스 시기 (Release Date)'),
+    escapeCsvCell('마일스톤 주요 혁신 (Milestone Title)'),
+    escapeCsvCell('5대 벤치마크 종합 평균'),
+    escapeCsvCell('MCP Atlas (도구 활용)'),
+    escapeCsvCell('DeepSearch QA (심층 추론)'),
+    escapeCsvCell('SWE-Bench Pro (실전 코딩)'),
+    escapeCsvCell('OSWorld (OS 제어)'),
+    escapeCsvCell('AIME 2026 (수학 경시)'),
+    escapeCsvCell('RTX 5090 생성 속도 (tok/s)'),
+    escapeCsvCell('온디바이스 95% CI 오차범위 (MoE)'),
+    escapeCsvCell('아키텍처 및 기술적 혁신 (Architecture Highlight)')
+  ].join(','));
+
+  data.versionTrends.forEach((vt) => {
+    rows.push([
+      escapeCsvCell(vt.version),
+      escapeCsvCell(vt.releaseDate),
+      escapeCsvCell(vt.milestoneTitle),
+      escapeCsvCell(`${vt.averageScore.toFixed(1)}점`),
+      escapeCsvCell(`${vt.mcpAtlas.toFixed(1)}점`),
+      escapeCsvCell(`${vt.deepSearchQa.toFixed(1)}점`),
+      escapeCsvCell(`${vt.sweBenchPro.toFixed(1)}점`),
+      escapeCsvCell(`${vt.osWorld.toFixed(1)}점`),
+      escapeCsvCell(`${vt.aime2026.toFixed(1)}점`),
+      escapeCsvCell(`${vt.tokPerSecRtx5090} tok/s`),
+      escapeCsvCell(`±${vt.marginOfError.toFixed(1)}점 (n=${vt.sampleSize}회)`),
+      escapeCsvCell(vt.architectureHighlight)
     ].join(','));
   });
   rows.push('');

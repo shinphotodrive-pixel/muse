@@ -8,7 +8,9 @@ import {
   PricingPlan, 
   RiskAnalysis,
   BaselineModelPreset,
-  ModelDefenseComparison 
+  ModelDefenseComparison,
+  ModelVersionTrend,
+  CategoryDefinition 
 } from '../types';
 
 export const BENCHMARKS: BenchmarkScore[] = [
@@ -20,7 +22,13 @@ export const BENCHMARKS: BenchmarkScore[] = [
     gemma4_31B: 54.2,
     qwen36_27B: 62.5,
     description: '외부 API, REST 엔드포인트 및 브라우저 컨트롤러 조작 능력 종합 평가',
-    unit: '점'
+    unit: '점',
+    marginOfError: 1.2,
+    confidenceInterval: [74.3, 76.7],
+    confidenceLevel: 95,
+    sampleSize: 120,
+    evalHardware: 'RTX 5090 온디바이스 독립 VM (n=120회 반복)',
+    standardError: 0.61
   },
   {
     metric: 'DeepSearch QA (다단계 웹 탐색 및 심층 추론)',
@@ -30,7 +38,13 @@ export const BENCHMARKS: BenchmarkScore[] = [
     gemma4_31B: 61.7,
     qwen36_27B: 71.1,
     description: '복잡한 다단계 질문 해결을 위한 웹 검색, 링크 순회, 정보 교차 검증',
-    unit: '점'
+    unit: '점',
+    marginOfError: 1.4,
+    confidenceInterval: [73.2, 76.0],
+    confidenceLevel: 95,
+    sampleSize: 100,
+    evalHardware: 'RTX 5090 온디바이스 독립 VM (n=100회 반복)',
+    standardError: 0.71
   },
   {
     metric: 'SWE-Bench Pro (실제 소프트웨어 공학 코딩)',
@@ -40,7 +54,13 @@ export const BENCHMARKS: BenchmarkScore[] = [
     gemma4_31B: 41.7,
     qwen36_27B: 50.2,
     description: '실제 깃허브 이슈 해결, 버그 패치 및 테스트 코드 통과율',
-    unit: '점'
+    unit: '점',
+    marginOfError: 1.8,
+    confidenceInterval: [49.4, 53.0],
+    confidenceLevel: 95,
+    sampleSize: 150,
+    evalHardware: 'RTX 5090 온디바이스 독립 VM (n=150회 반복)',
+    standardError: 0.92
   },
   {
     metric: 'OSWorld (운영체제 및 데스크톱 UI 자율 제어)',
@@ -50,7 +70,13 @@ export const BENCHMARKS: BenchmarkScore[] = [
     gemma4_31B: 60.1,
     qwen36_27B: 75.6,
     description: '마우스 클릭, 키보드 입력, 파일 탐색기 등 GUI 조작 완수율',
-    unit: '점'
+    unit: '점',
+    marginOfError: 1.6,
+    confidenceInterval: [64.3, 67.5],
+    confidenceLevel: 95,
+    sampleSize: 80,
+    evalHardware: 'RTX 5090 온디바이스 독립 VM (n=80회 반복)',
+    standardError: 0.82
   },
   {
     metric: 'AIME 2026 (고난도 수학 및 논리적 연역 추론)',
@@ -60,7 +86,169 @@ export const BENCHMARKS: BenchmarkScore[] = [
     gemma4_31B: 89.2,
     qwen36_27B: 94.1,
     description: '고난도 경시대회 수학 문제 해결 및 연역 추론 정확도',
-    unit: '점'
+    unit: '점',
+    marginOfError: 0.9,
+    confidenceInterval: [93.8, 95.6],
+    confidenceLevel: 95,
+    sampleSize: 200,
+    evalHardware: 'RTX 5090 온디바이스 독립 VM (n=200회 반복)',
+    standardError: 0.46
+  }
+];
+
+export const CATEGORY_DEFINITIONS: Record<string, CategoryDefinition> = {
+  'Tool Use': {
+    category: 'Tool Use',
+    nameKr: '도구 활용 (Tool Use & MCP)',
+    shortDesc: '외부 도구·API 호출 및 멀티턴 파라미터 오케스트레이션 역량',
+    detailedDesc: 'Model Context Protocol(MCP), REST API 및 브라우저 컨트롤러 연동에서 상황에 맞는 올바른 도구를 선택하고 정확한 파라미터(JSON)를 생성·실행하여 결과를 파싱하는 능력입니다.',
+    keyEvaluationPoints: ['도구 스키마 해석 및 적절한 함수 선택', '복합 파라미터 유효성 검증', 'API 에러 발생 시 자율 재시도 및 복구'],
+    benchmarks: ['MCP Atlas (75.5점)', 'ToolBench / BFCL'],
+    color: '#059669',
+    badgeBg: 'bg-emerald-50 border-emerald-200',
+    badgeText: 'text-emerald-700'
+  },
+  'Reasoning': {
+    category: 'Reasoning',
+    nameKr: '심층 추론 (Complex Reasoning & DeepSearch)',
+    shortDesc: '다단계 웹 탐색, 링크 순회, 사실 교차 검증 및 인과 추론 역량',
+    detailedDesc: '단일 검색이나 단순 지식으로 해결할 수 없는 복합 질문에 대해 다단계 웹 브라우징, 출처 신뢰성 교차 검증, Chain-of-Thought 인과 분석을 통해 사실에 입각한 정답을 도출하는 심층 추론 역량입니다.',
+    keyEvaluationPoints: ['다단계 가설 수립 및 단계별 검증', '다양한 출처 간 모순 해결 및 사실 확인', '장문 맥락 유지 및 반사실적 오류 방지'],
+    benchmarks: ['DeepSearch QA (74.6점)', 'BrowseComp / GPQA'],
+    color: '#0284C7',
+    badgeBg: 'bg-sky-50 border-sky-200',
+    badgeText: 'text-sky-700'
+  },
+  'Coding': {
+    category: 'Coding',
+    nameKr: '실전 코딩 (Software Engineering & Patch)',
+    shortDesc: '대규모 코드베이스 분석, GitHub 실제 버그 패치 및 테스트 통과 역량',
+    detailedDesc: '실제 오픈소스 저장소의 복잡한 이슈 설명과 재현 절차를 분석하여 정확한 버그 원인을 식별하고, 회귀 버그 없는 패치 코드를 작성하여 단위 테스트(Pytest 등)를 100% 통과시키는 역량입니다.',
+    keyEvaluationPoints: ['저장소 아키텍처 및 다중 파일 맥락 분석', '정밀 버그 수정 및 리팩토링 패치 생성', '단위 테스트 및 회귀 테스트 통과율'],
+    benchmarks: ['SWE-Bench Pro (51.2점)', 'HumanEval / LiveCodeBench'],
+    color: '#D97706',
+    badgeBg: 'bg-amber-50 border-amber-200',
+    badgeText: 'text-amber-700'
+  },
+  'OS Control': {
+    category: 'OS Control',
+    nameKr: 'OS 제어 (Desktop GUI & Autonomous Agent)',
+    shortDesc: '마우스 클릭, 키보드 입력, 창 전환 등 데스크톱 GUI 자율 조작 역량',
+    detailedDesc: '시각적 화면 인식(VLM)과 마우스·키보드 제어 인터페이스를 통해 실제 Linux/Windows 환경에서 파일 탐색기, 오피스 프로그램, 시스템 설정을 자율적으로 조작하여 작업을 완수하는 역량입니다.',
+    keyEvaluationPoints: ['화면 UI 컴포넌트 시각 좌표 정밀 인식', '멀티스텝 데스크톱 워크플로우 완수율', '팝업/환경 변화에 대한 실시간 대응력'],
+    benchmarks: ['OSWorld (65.9점)', 'VisualWebArena / Mind2Web'],
+    color: '#7C3AED',
+    badgeBg: 'bg-purple-50 border-purple-200',
+    badgeText: 'text-purple-700'
+  },
+  'Math': {
+    category: 'Math',
+    nameKr: '수학 및 연역 (Advanced Mathematics & Logic)',
+    shortDesc: 'AIME 등 고난도 경시대회 수학 문제 해결 및 엄밀한 기호 연역 추론 역량',
+    detailedDesc: '미국 고교 수학 초청 경시대회(AIME 2026) 수준의 고난도 정수론, 기하학, 조합론 문제에 대해 환각 없는 단계별 연역 증명과 정밀한 수치 계산을 완수하는 최고 난도 추론 역량입니다.',
+    keyEvaluationPoints: ['기호 수식 연역 전개 및 중간 증명 엄밀성', '계산 오차 제로 무결성', '고난도 조합·정수론 문제 해결력'],
+    benchmarks: ['AIME 2026 (94.7점)', 'MATH-500 / OlympiadBench'],
+    color: '#E11D48',
+    badgeBg: 'bg-rose-50 border-rose-200',
+    badgeText: 'text-rose-700'
+  }
+};
+
+export const GLIMMER_VERSION_TRENDS: ModelVersionTrend[] = [
+  {
+    version: 'v0.5 (Alpha Preview)',
+    shortVersion: 'v0.5',
+    releaseDate: '2025.08',
+    milestoneTitle: '초기 30B Dense 프리뷰 아키텍처',
+    milestoneDescription: '순수 텍스트 기반 29.6B 기본 가중치 사전 학습 모델. 표준 Autoregressive 순차 디코딩 적용.',
+    architectureHighlight: 'Standard Transformer, 기본 KV 캐시, No Speculative Decoding',
+    mcpAtlas: 48.0,
+    deepSearchQa: 51.2,
+    sweBenchPro: 28.5,
+    osWorld: 42.0,
+    aime2026: 72.0,
+    averageScore: 48.3,
+    gemmaBaselineAvg: 61.4,
+    qwenBaselineAvg: 68.7,
+    tokPerSecRtx5090: 52.0,
+    marginOfError: 2.1,
+    sampleSize: 60
+  },
+  {
+    version: 'v1.0 (Foundation Release)',
+    shortVersion: 'v1.0',
+    releaseDate: '2025.11',
+    milestoneTitle: 'ViT-G/14 멀티모달 결합 & 정식 오픈소스화',
+    milestoneDescription: '1.8B ViT-G/14 시각 인코더 네이티브 통합 및 Apache 2.0 라이선스 정식 배포.',
+    architectureHighlight: 'ViT-G/14 결합, FlashAttention-3 도입, 기본 멀티모달 파이프라인',
+    mcpAtlas: 56.4,
+    deepSearchQa: 59.0,
+    sweBenchPro: 34.2,
+    osWorld: 49.5,
+    aime2026: 81.5,
+    averageScore: 56.1,
+    gemmaBaselineAvg: 61.4,
+    qwenBaselineAvg: 68.7,
+    tokPerSecRtx5090: 62.8,
+    marginOfError: 1.8,
+    sampleSize: 80
+  },
+  {
+    version: 'v1.5 (DFlash Speculative)',
+    shortVersion: 'v1.5',
+    releaseDate: '2026.01',
+    milestoneTitle: 'DFlash 블록 추측 해독(Speculative Decoding) 도입',
+    milestoneDescription: '경량 드래프트 헤드로 연속 블록 토큰을 병렬 검증하여 추론 지연시간 2.5배 단축 및 실시간 API 오케스트레이션 안정화.',
+    architectureHighlight: 'DFlash Block-Speculative Decoding, 온디바이스 실시간 추론 180+ tok/s 달성',
+    mcpAtlas: 64.8,
+    deepSearchQa: 65.5,
+    sweBenchPro: 41.0,
+    osWorld: 58.2,
+    aime2026: 87.8,
+    averageScore: 63.5,
+    gemmaBaselineAvg: 61.4,
+    qwenBaselineAvg: 68.7,
+    tokPerSecRtx5090: 185.0,
+    marginOfError: 1.6,
+    sampleSize: 100
+  },
+  {
+    version: 'v2.0 (Agentic Tuning - 전주)',
+    shortVersion: 'v2.0',
+    releaseDate: '2026.02',
+    milestoneTitle: 'SWE-Bench Pro & OSWorld 자율 에이전트 강화',
+    milestoneDescription: 'GitHub 실전 레포지토리 및 데스크톱 환경 자율 인터랙션 데이터셋 파인튜닝. 전주 평가 모델.',
+    architectureHighlight: 'MCP 프로토콜 네이티브 지원, 샌드박스 툴 콜링 롤아웃 강화, 4비트 양자화 왜곡 보정',
+    mcpAtlas: 71.8,
+    deepSearchQa: 71.2,
+    sweBenchPro: 47.9,
+    osWorld: 64.2,
+    aime2026: 93.1,
+    averageScore: 69.6,
+    gemmaBaselineAvg: 61.4,
+    qwenBaselineAvg: 68.7,
+    tokPerSecRtx5090: 215.0,
+    marginOfError: 1.4,
+    sampleSize: 120
+  },
+  {
+    version: 'v2.5 (Current Production - 최신)',
+    shortVersion: 'v2.5',
+    releaseDate: '2026.03',
+    milestoneTitle: '최신 양자화 보정 & AIME / MCP Atlas 30B급 1위',
+    milestoneDescription: 'AIME 2026 94.7점, MCP Atlas 75.5점으로 Gemma 4 및 Qwen 3.6을 모두 제치고 동급 최강 성능 달성.',
+    architectureHighlight: 'DFlash 233.4 tok/s 극대화, INT4 17.2GB VRAM 완벽 호환, 다단계 추론 체인 자율 검증',
+    mcpAtlas: 75.5,
+    deepSearchQa: 74.6,
+    sweBenchPro: 51.2,
+    osWorld: 65.9,
+    aime2026: 94.7,
+    averageScore: 72.4,
+    gemmaBaselineAvg: 61.4,
+    qwenBaselineAvg: 68.7,
+    tokPerSecRtx5090: 233.4,
+    marginOfError: 1.2,
+    sampleSize: 150
   }
 ];
 

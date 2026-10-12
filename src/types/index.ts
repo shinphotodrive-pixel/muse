@@ -7,6 +7,44 @@ export interface BenchmarkScore {
   qwen36_27B: number;
   description: string;
   unit: string;
+  // On-Device Reliability & Confidence Interval metrics
+  marginOfError: number;
+  confidenceInterval: [number, number];
+  confidenceLevel: number; // e.g. 95 (95% CI)
+  sampleSize: number; // e.g. 120 (runs evaluated on local hardware)
+  evalHardware: string;
+  standardError?: number;
+}
+export interface ModelVersionTrend {
+  version: string;
+  shortVersion: string;
+  releaseDate: string;
+  milestoneTitle: string;
+  milestoneDescription: string;
+  architectureHighlight: string;
+  mcpAtlas: number;       // Tool Use
+  deepSearchQa: number;   // Reasoning
+  sweBenchPro: number;    // Coding
+  osWorld: number;        // OS Control
+  aime2026: number;       // Math
+  averageScore: number;   // 5대 벤치마크 평균
+  gemmaBaselineAvg: number; // 61.4 (Gemma 4 31B 기준선)
+  qwenBaselineAvg: number;  // 68.7 (Qwen 3.6 27B 기준선)
+  tokPerSecRtx5090: number; // RTX 5090 기준 생성 속도 (tok/s)
+  marginOfError: number;  // 온디바이스 95% CI 오차범위
+  sampleSize: number;     // 표본 수
+}
+
+export interface CategoryDefinition {
+  category: string;
+  nameKr: string;
+  shortDesc: string;
+  detailedDesc: string;
+  keyEvaluationPoints: string[];
+  benchmarks: string[];
+  color: string;
+  badgeBg: string;
+  badgeText: string;
 }
 
 export interface HardwarePreset {
